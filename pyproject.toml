@@ -1,0 +1,45 @@
+[project]
+name = "gemini-adk-demo"
+version = "0.1.0"
+description = "A Life Tracker ADK Insight Engine demo project for the Google ADK Hackathon."
+authors = [{ name = "Mike Doepking", email = "mike@opportunity-architect.com" }]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "gemini_adk_demo"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+google-adk = "^1.4.1"
+google-genai = "^1.16.1"
+python-dotenv = "^1.0.1"
+pandas = "^2.2.3"
+google-cloud-aiplatform = { version = "^1.93.0", extras = [
+    "adk",
+    "agent-engines",
+] }
+absl-py = "^2.3.0"
+toml = "^0.10.2"
+pg8000 = "^1.30.3"
+sqlalchemy = "^2.0.23"
+psycopg2-binary = "^2.9.9"
+cloud-sql-python-connector = "^1.5.0"
+gunicorn = "^22.0.0"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+black = "^25.1.0"
+google-adk = { version = "^1.4.1", extras = ["eval"] }
+pytest-asyncio = "^0.26.0"
+
+[tool.poetry.group.deployment]
+optional = true
+
+[tool.poetry.group.deployment.dependencies]
+absl-py = "^2.2.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
