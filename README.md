@@ -174,18 +174,15 @@ graph TD
     -   Copy `.env.example` to `.env`.
     -   Fill in all the required values for your GCP project and other credentials.
 
-4.  **Build and Push the Docker Image:**
-    -   The `build.sh` script builds the Docker image and pushes it to your project's Google Container Registry.
+4.  **Build, Push, and Deploy:**
+    -   The `build.sh` script builds the Docker image, pushes it to your project's Google Container Registry, and deploys it to Cloud Run. It configures all necessary environment variables from the `.env` file.
     -   **For Production:**
         ```bash
         ./build.sh
         ```
-
-5.  **Deploy to Cloud Run:**
-    -   The `deploy.sh` script deploys the container image from GCR to Cloud Run, configuring all necessary environment variables from the `.env` file.
-    -   **For Production:**
+    -   **For Development:**
         ```bash
-        ./deploy.sh
+        ./build.sh --dev
         ```
     -   The script will output the URL of your deployed service.
 
