@@ -2,7 +2,7 @@
 
 ## Motivation
 
-For me, the process of tracking daily life always felt like a chore, it imposed a kind of "mental penalty" that slowed me down. The context switch between analytical thinking and creative living is real, and traditional tools (think physical notebooks or spreadsheets) often add more friction than they remove. You end up wrestling with rigid formats and questioning if the effort will ever pay off in a format you can actually reuse long-term.
+For me, the process of tracking my daily life always felt like a chore, it imposed a kind of "mental penalty" that slowed me down. The context switch between analytical thinking and creative living is real, and traditional tools (think physical notebooks or spreadsheets) often add more friction than they remove. You end up wrestling with rigid formats and questioning if the effort will ever pay off in a format you can actually reuse long-term.
 
 This project started as a personal quest to eliminate that friction. The vision was to build a system that feels less like a database (although it's built on top of one) and more like a trusted conversational partner that you can talk to, dump random thoughts into, and rely on to make sense of the chaos.
 
@@ -49,43 +49,103 @@ This project directly addresses two key hackathon categories:
 
 ```mermaid
 graph TD
-    subgraph User Interface
+    subgraph "User-Facing"
         A[Client Application]
     end
 
-    subgraph Google Cloud Platform
-        B[Cloud Run - FastAPI Server]
-        C[ADK Router Agent]
-        D[Insight Team - Parallel Agents]
-        E[Judge Agent]
-        F[Tools]
-        G[Cloud SQL - PostgreSQL]
-        H[Google Container Registry]
-    end
-    
-    subgraph Deployment
-        I(Local Machine)
-        J(build.sh)
-        K(deploy.sh)
-        L(Dockerfile)
+    subgraph "Google Cloud Platform"
+        subgraph "Cloud Run Service"
+            B[FastAPI Server]
+            C[ADK Multi-Agent System]
+        end
+        
+        D[Cloud SQL - PostgreSQL]
+        E[Google Container Registry]
+        F[Google Cloud Logging]
     end
 
-    A -- HTTP Requests --> B
+    subgraph "Local Development & Deployment"
+        G[Local Machine]
+        H[Dockerfile]
+        I[Build & Deploy Scripts]
+    end
+
+    %% --- Relationships ---
+    A -- Interacts with --> B
     B -- Hosts --> C
-    C -- Routes to --> D
-    D -- Comprises --> Visionary
-    D -- Comprises --> Architect
-    D -- Comprises --> Commander
-    D -- Generates Insights --> E
-    E -- Finalizes Report --> C
-    C -- Uses --> F
-    F -- Interact with --> G
+    C -- Interacts with --> D
+    C -- Logs to --> F
     
-    I -- Runs --> J
-    J -- Builds --> L
-    J -- Pushes Image to --> H
-    I -- Runs --> K
-    K -- Deploys Image from --> H -- to --> B
+    G -- Executes --> I
+    I -- Uses --> H
+    I -- Pushes Image to --> E
+    I -- Deploys Image from --> E -- to --> B
+```
+
+## Agent Flow Diagram
+
+```mermaid
+graph TD
+    subgraph "User Interface"
+        A[Client Application]
+    end
+
+    subgraph "ADK Multi-Agent System (on Cloud Run)"
+        B(Router Agent - The Dispatcher)
+        
+        subgraph "Data Management Tools"
+            C(Log Entry Tool)
+            D(Task Manager Tool)
+            E(Background Info Tool)
+        end
+
+        subgraph "Insight Engine Workflow"
+            F(InsightsEngineWorkflow)
+            
+            subgraph "Debate Team (Parallel Execution)"
+                G(Visionary Agent)
+                H(Architect Agent)
+                I(Commander Agent)
+            end
+
+            J(Judge Agent - The Synthesizer)
+        end
+    end
+
+    subgraph "Backend & Storage"
+        K[(Cloud SQL - PostgreSQL)]
+    end
+
+    %% --- Main Flow from User ---
+    A -- "User Prompt" --> B
+
+    %% --- Flow 1: Data Management Delegation ---
+    B -- "'Log this thought...'" --> C
+    C -- "add_log_entry_tool()" --> K
+
+    B -- "'Create a task...'" --> D
+    B -- "'Update a task...'" --> D
+    B -- "'List my tasks...'" --> D
+    D -- "create_tasks_tool()" --> K
+    D -- "update_tasks_tool()" --> K
+    D -- "list_tasks_tool()" --> K
+
+    B -- "'Update my goals...'" --> E
+    E -- "update_background_info_tool()" --> K
+    
+    %% --- Flow 2: Insight Engine Orchestration ---
+    B -- "'Give me a report...'" --> F
+    F -- Reads Data --> K
+    F -- Triggers --> G
+    F -- Triggers --> H
+    F -- Triggers --> I
+
+    G -- "Visionary Report" --> J
+    H -- "Architect Report" --> J
+    I -- "Commander Report" --> J
+
+    J -- "Final Synthesized Report" --> B
+    B -- Streams Final Report --> A
 ```
 
 ## Prerequisites
