@@ -4,18 +4,18 @@
 
 # --- Configuration ---
 # Default to production environment
-ENV="p"
+ENV="prod"
 if [ "$1" == "--dev" ]; then
-  ENV="d"
+  ENV="dev"
 fi
 
 # Load environment variables based on the environment
-if [ "$ENV" == "d" ]; then
+if [ "$ENV" == "dev" ]; then
   ENV_FILE=".env.dev"
-  SERVICE_NAME="gemini-adk-demo-d"
+  SERVICE_NAME="gemini-adk-demo-dev"
 else
   ENV_FILE=".env"
-  SERVICE_NAME="gemini-adk-demo-p"
+  SERVICE_NAME="gemini-adk-demo-prod"
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -44,6 +44,15 @@ ENV_VARS+=",CLOUD_SQL_USER=${CLOUD_SQL_USER}"
 ENV_VARS+=",CLOUD_SQL_PASSWORD=${CLOUD_SQL_PASSWORD}"
 ENV_VARS+=",CLOUD_SQL_DATABASE_NAME=${CLOUD_SQL_DATABASE_NAME}"
 ENV_VARS+=",PRIVATE_IP=${PRIVATE_IP}"
+ENV_VARS+=",SMTP_HOST=${SMTP_HOST}"
+ENV_VARS+=",SMTP_PORT=${SMTP_PORT}"
+ENV_VARS+=",SMTP_USER=${SMTP_USER}"
+ENV_VARS+=",SMTP_PASSWORD=${SMTP_PASSWORD}"
+ENV_VARS+=",NEWSLETTER_SENDER=${NEWSLETTER_SENDER}"
+ENV_VARS+=",SUBSCRIPTION_SECRET_KEY=${SUBSCRIPTION_SECRET_KEY}"
+ENV_VARS+=",INTERNAL_API_KEY=${INTERNAL_API_KEY}"
+ENV_VARS+=",API_BASE_URL=${API_BASE_URL}"
+ENV_VARS+=",STREAMLIT_APP_URL=${STREAMLIT_APP_URL}"
 
 # --- Deployment ---
 echo "Deploying ${SERVICE_NAME} to Cloud Run in project ${PROJECT_ID}..."
