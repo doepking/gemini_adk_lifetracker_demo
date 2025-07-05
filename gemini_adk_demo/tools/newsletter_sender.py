@@ -28,14 +28,14 @@ SMTP_HOST = os.environ.get("SMTP_HOST")
 SMTP_PORT = os.environ.get("SMTP_PORT")
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-NEWSLETTER_SENDER_EMAIL = os.environ.get("NEWSLETTER_SENDER_EMAIL")
+NEWSLETTER_SENDER = os.environ.get("NEWSLETTER_SENDER")
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8080")
 SUBSCRIPTION_SECRET_KEY = os.environ.get("SUBSCRIPTION_SECRET_KEY")
 
 
 async def send_email_async(subject: str, html_body: str, to_email: str):
     if not all(
-        [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, NEWSLETTER_SENDER_EMAIL]
+        [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, NEWSLETTER_SENDER]
     ):
         logger.error(
             f"Email server configuration is incomplete. Skipping email to {to_email}."
@@ -44,7 +44,7 @@ async def send_email_async(subject: str, html_body: str, to_email: str):
 
     def _send_sync():
         message = MIMEMultipart("alternative")
-        message["From"] = f"The Opportunity Architect <{NEWSLETTER_SENDER_EMAIL}>"
+        message["From"] = NEWSLETTER_SENDER
         message["To"] = to_email
         message["Subject"] = subject
         message.attach(MIMEText(html_body, "html"))
@@ -55,7 +55,7 @@ async def send_email_async(subject: str, html_body: str, to_email: str):
                 with smtplib.SMTP_SSL(SMTP_HOST, port) as server:
                     server.login(SMTP_USER, SMTP_PASSWORD)
                     server.sendmail(
-                        NEWSLETTER_SENDER_EMAIL, to_email, message.as_string()
+                        SMTP_USER, to_email, message.as_string()
                     )
             else:
                 with smtplib.SMTP(SMTP_HOST, port) as server:
@@ -63,7 +63,7 @@ async def send_email_async(subject: str, html_body: str, to_email: str):
                         server.starttls()
                     server.login(SMTP_USER, SMTP_PASSWORD)
                     server.sendmail(
-                        NEWSLETTER_SENDER_EMAIL, to_email, message.as_string()
+                        SMTP_USER, to_email, message.as_string()
                     )
             return True
         except Exception as e:
