@@ -12,6 +12,7 @@ from .tools.callbacks import (
     load_user_data,
     load_user_data_after_tool_callback,
     rate_limit_callback,
+    send_newsletter_callback,
 )
 from .tools.log_entry import add_log_entry_tool
 from .tools.task_manager import create_tasks_tool, update_tasks_tool, list_tasks_tool
@@ -34,6 +35,7 @@ insights_engine_workflow = SequentialAgent(
         judge_agent,
     ],
     description="Executes the full insights engine workflow.",
+    after_agent_callback=send_newsletter_callback,
 )
 
 router_agent = LlmAgent(
