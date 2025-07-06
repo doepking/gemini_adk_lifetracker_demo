@@ -1,0 +1,683 @@
+openapi: 3.0.0
+info:
+  title: Gemini ADK Life Tracker Demo API
+  description: A FastAPI service that provides CRUD endpoints for a life tracker application and integrates with the Google Agent Development Kit (ADK).
+  version: 1.0.0
+servers:
+  - url: https://life-tracker-adk-api-dev.opportunity-architect.com
+paths:
+  /feedback:
+    post:
+      summary: Collect Feedback
+      description: Collect and log feedback.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Feedback'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /metrics/user/{user_email}:
+    get:
+      summary: Get User Daily Metrics
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailyMetric'
+  /metrics/log_mood_via_redirect:
+    get:
+      summary: Log Mood via Redirect
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: mood_value
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: mood_emoji
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '303':
+          description: Redirect Response
+  /newsletter/subscribe/{user_email}/{token}:
+    post:
+      summary: Subscribe Newsletter
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterPreference'
+  /newsletter/preferences/{user_email}:
+    get:
+      summary: Get Newsletter Preference
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterPreference'
+  /newsletter/unsubscribe/{user_email}/{token}:
+    get:
+      summary: Unsubscribe From Link
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+    post:
+      summary: Unsubscribe From Link
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+  /newsletter/track/open/{log_id}:
+    get:
+      summary: Track Newsletter Open
+      parameters:
+        - name: log_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            image/gif: {}
+  /newsletter/send-daily:
+    post:
+      summary: Trigger Daily Newsletter Sending
+      security:
+        - InternalAPIKey: []
+      responses:
+        '204':
+          description: Successful Response
+  /users/by_email/{user_email}:
+    get:
+      summary: Get User By Email
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /users/{user_id}/purge:
+    delete:
+      summary: Purge User
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful Response
+  /users/{user_id}/tasks:
+    get:
+      summary: Read Tasks
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+    post:
+      summary: Create Task For User
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+    put:
+      summary: Update Tasks For User Bulk
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /users/{user_id}/tasks/{task_id}:
+    put:
+      summary: Update Task For User
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+  /users/{user_id}/text_inputs:
+    get:
+      summary: Read Text Inputs
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TextInput'
+    post:
+      summary: Create Text Input For User
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextInputCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TextInput'
+    put:
+      summary: Update Text Inputs For User
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/TextInputUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /users/{user_id}/background_info:
+    get:
+      summary: Read Background Info
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackgroundInfo'
+    put:
+      summary: Update Background Info For User
+      security:
+        - InternalAPIKey: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackgroundInfoCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackgroundInfoResponse'
+  /run_sse:
+    post:
+      summary: Agent Run Sse (ADK)
+      description: Server-Sent Events endpoint for the ADK.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /apps/{app_name}/users/{user_id}/sessions:
+    get:
+      summary: List Sessions (ADK)
+      parameters:
+      - name: app_name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    post:
+      summary: Create Session (ADK)
+      parameters:
+      - name: app_name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+  /apps/{app_name}/users/{user_id}/sessions/{session_id}:
+    get:
+      summary: Get Session (ADK)
+      parameters:
+      - name: app_name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      summary: Create Session With Id (ADK)
+      parameters:
+      - name: app_name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+    delete:
+      summary: Delete Session (ADK)
+      parameters:
+      - name: app_name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful Response
+components:
+  securitySchemes:
+    InternalAPIKey:
+      type: apiKey
+      in: header
+      name: X-Internal-API-Key
+  schemas:
+    Feedback:
+      type: object
+      properties:
+        score:
+          oneOf:
+            - type: integer
+            - type: number
+        text:
+          type: string
+        invocation_id:
+          type: string
+    DailyMetric:
+      type: object
+      properties:
+        user_email:
+          type: string
+        metric_date:
+          type: string
+          format: date
+        morning_mood_subjective:
+          type: string
+    NewsletterPreference:
+      type: object
+      properties:
+        user_email:
+          type: string
+        subscribed:
+          type: boolean
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+        username:
+          type: string
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        status:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+    TaskCreate:
+      type: object
+      properties:
+        description:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+    TaskUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        status:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+    TextInput:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        category:
+          type: string
+    TextInputCreate:
+      type: object
+      properties:
+        content:
+          type: string
+        category:
+          type: string
+    TextInputUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        category:
+          type: string
+    BackgroundInfo:
+      type: object
+      properties:
+        content:
+          type: object
+    BackgroundInfoCreate:
+      type: object
+      properties:
+        content:
+          type: object
+    BackgroundInfoResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        updated_info:
+          type: object
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string

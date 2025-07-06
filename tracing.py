@@ -1,7 +1,7 @@
 import json
 import logging
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Union
 
 from google.cloud import logging as google_cloud_logging
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
@@ -16,7 +16,7 @@ class CloudTraceLoggingSpanExporter(CloudTraceSpanExporter):
 
     def __init__(
         self,
-        logging_client: google_cloud_logging.Client | None = None,
+        logging_client: Union[google_cloud_logging.Client, None] = None,
         debug: bool = False,
         **kwargs: Any,
     ) -> None:

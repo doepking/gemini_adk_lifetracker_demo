@@ -8,6 +8,7 @@ import asyncio
 import hashlib
 import re
 import uuid
+from typing import Union
 from google.adk.tools import FunctionTool as Tool, ToolContext
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
@@ -81,7 +82,7 @@ async def send_email_async(subject: str, html_body: str, to_email: str):
 
 
 def generate_newsletter_html_content(
-    user_email: str, user_name: str | None, content: str, log_id: int
+    user_email: str, user_name: Union[str, None], content: str, log_id: int
 ) -> str:
     insights_and_nudges_html = ""
     motivational_quote_text = ""

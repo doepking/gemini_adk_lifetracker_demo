@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from google.adk.cli.fast_api import get_fast_api_app
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Union
 from google.cloud import logging as google_cloud_logging
 from tracing import CloudTraceLoggingSpanExporter
 from opentelemetry import trace
@@ -177,8 +177,8 @@ app.description = f"API for interacting with the Agent {AGENT_DIR_NAME}"
 class Feedback(BaseModel):
     """Represents feedback for a conversation."""
 
-    score: int | float
-    text: str | None = ""
+    score: Union[int, float]
+    text: Union[str, None] = ""
     invocation_id: str
     log_type: Literal["feedback"] = "feedback"
     service_name: Literal[AGENT_DIR_NAME] = AGENT_DIR_NAME
