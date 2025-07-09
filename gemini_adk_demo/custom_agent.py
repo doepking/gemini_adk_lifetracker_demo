@@ -8,35 +8,37 @@ class CustomAgent(BaseAgent):
         self,
         context: AgentContext,
     ) -> AsyncGenerator[AgentEvent, None]:
-        # Step 1: Use an LlmAgent to select a tool
+        # Step 1: Use an LlmAgent to select a tool or generate a response.
+        # We pass through any callbacks from this agent to the inner agent.
         llm_agent = LlmAgent(
             model=self.model,
             instruction=self.instruction,
             tools=self.tools,
             name=f"{self.name}_LlmAgent",
+            before_agent_callback=self.before_agent_callback,
+            after_tool_callback=self.after_tool_callback,
+            before_model_callback=self.before_model_callback,
+            after_model_callback=self.after_model_callback,
         )
 
-        tool_selection_events = [
-            event async for event in llm_agent.run_async(context)
-        ]
-
-        # Find the tool call in the events
-        tool_call = None
-        for event in tool_selection_events:
-            yield event
+        # Step 2: Intercept the events from the LlmAgent.
+        async for event in llm_agent.run_async(context):
             if event.type == "TOOL_CALL":
-                tool_call = event.tool_call
-                break
+                # A tool was called, so we take over the execution flow.
+                # First, yield the TOOL_CALL event itself so the caller sees it.
+                yield event
 
-        if not tool_call:
-            yield FinalResponse(
-                output={"status": "error", "message": "No tool was selected."}
-            )
-            return
+                # Execute the tool.
+                tool_execution_result = await self._execute_tool(event.tool_call, context)
+                yield tool_execution_result
 
-        # Step 2: Execute the tool
-        tool_execution_result = await self._execute_tool(tool_call, context)
-        yield tool_execution_result
+                # Create and yield our own final response, skipping the summarization.
+                yield FinalResponse(output=tool_execution_result.tool_result.output)
 
-        # Step 3: Return the tool's output directly
-        yield FinalResponse(output=tool_execution_result.tool_result.output)
+                # We are done, so we exit the generator.
+                return
+            else:
+                # For any other event type (e.g., MODEL_START, or a FINAL_RESPONSE for chat),
+                # just pass it through. If the event is a FINAL_RESPONSE, the generator
+                # will correctly terminate execution.
+                yield event
