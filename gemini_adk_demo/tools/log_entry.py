@@ -27,14 +27,12 @@ def add_new_log_entry_for_user(
         user_email = tool_context.state.get("user_email")
         user_name = tool_context.state.get("user_name")
         user = get_or_create_user(db, user_email, user_name, user_id)
-        result = add_log_entry_crud_tool(
+        return add_log_entry_crud_tool(
             db=db,
             text_input=text_input,
             user=user,
             category_suggestion=category_suggestion,
         )
-        tool_context.actions.skip_summarization = True
-        return result
     except Exception as e:
         return {"status": "error", "message": f"An unexpected error occurred: {e}"}
     finally:
