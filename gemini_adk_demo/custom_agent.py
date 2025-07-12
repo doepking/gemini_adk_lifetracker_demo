@@ -9,7 +9,7 @@ class CustomAgent(BaseAgent):
     """A custom agent that bypasses the second LLM call for tool summarization."""
 
     # --- Field Declarations for Pydantic ---
-    # These fields are expected by the LlmAgent we create internally.
+    # These fields are expected by the LlmAgent that we create internally.
     model: str
     instruction: str
     tools: List[Any]
