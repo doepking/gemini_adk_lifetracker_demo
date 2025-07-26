@@ -1,18 +1,25 @@
 from google.adk.tools import FunctionTool as Tool, ToolContext
 from typing import Optional
-from ..shared_libraries.crud import add_log_entry_and_persist_impl, get_or_create_user
-from ..shared_libraries.database import get_db
+from ..crud import add_log_entry_tool as add_log_entry_crud_tool, get_or_create_user
+from ..database import get_db
 
-def add_log_entry_impl(text_input: str, category_suggestion: Optional[str], tool_context: ToolContext) -> str:
+
+def add_new_log_entry_for_user(
+    text_input: str, category_suggestion: Optional[str], tool_context: ToolContext
+) -> dict:
     """Appends a new log entry with a timestamp to the database.
+
+    This tool should be used for any user input that represents a thought, action, or observation.
 
     Args:
         text_input: The text of the log entry.
-        category_suggestion: A suggestion for the category of the log entry.
-        tool_context: The context of the tool.
+        category_suggestion: A suggestion for the category of the log entry (e.g., "Note", "Action", "Decision").
+        tool_context: The context of the tool, containing user information.
 
     Returns:
-        A string with the result of the operation.
+        A dictionary with the status of the operation.
+        Example (success): {"status": "success", "message": "Log entry added."}
+        Example (error): {"status": "error", "message": "User not found."}
     """
     db = next(get_db())
     try:
@@ -20,22 +27,18 @@ def add_log_entry_impl(text_input: str, category_suggestion: Optional[str], tool
         user_email = tool_context.state.get("user_email")
         user_name = tool_context.state.get("user_name")
         user = get_or_create_user(db, user_email, user_name, user_id)
-        result = add_log_entry_and_persist_impl(
+        return add_log_entry_crud_tool(
             db=db,
             text_input=text_input,
             user=user,
-            category_suggestion=category_suggestion or "Note"
+            category_suggestion=category_suggestion,
         )
-        if not result:
-            return "Error: Could not create log entry."
-        
-        content_preview = result.content[:100] + '...' if len(result.content) > 100 else result.content
-        return f"Log entry {result.id} added successfully Content: '{content_preview}', Category: '{result.category}'"
     except Exception as e:
-        return f"Error logging entry: {e}"
+        return {"status": "error", "message": f"An unexpected error occurred: {e}"}
     finally:
         db.close()
- 
+
+
 add_log_entry_tool = Tool(
-    func=add_log_entry_impl,
+    func=add_new_log_entry_for_user,
 )

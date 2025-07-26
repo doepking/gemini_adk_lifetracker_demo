@@ -105,7 +105,6 @@ ipython_config.py
 #   commonly ignored for libraries.
 #   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
 poetry.lock
-uv.lock
 # pdm
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
 #pdm.lock
@@ -175,3 +174,5 @@ imprint.md
 privacy_policy.md
 *.bak
 _output/
+cloud_scheduler_newsletter_dev.sh
+cloud_scheduler_newsletter_prod.sh

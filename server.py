@@ -7,25 +7,27 @@ load_dotenv()
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+
 from google.adk.cli.fast_api import get_fast_api_app
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Union
 from google.cloud import logging as google_cloud_logging
 from tracing import CloudTraceLoggingSpanExporter
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, export
-from fastapi import Depends
-from sqlalchemy.orm import Session
 
-from gemini_adk_demo.shared_libraries.database import init_db, engine, SessionLocal, get_db
-from gemini_adk_demo.shared_libraries import crud, schemas
+from gemini_adk_demo.database import init_db, engine, SessionLocal
+from gemini_adk_demo import crud
+from api.routers import newsletter, metrics, users
+from api.exceptions import setup_exception_handlers
 
 logging_client = google_cloud_logging.Client()
 logger = logging_client.logger(__name__)
 
+STREAMLIT_APP_URL = os.environ.get("STREAMLIT_APP_URL")
 AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+AGENT_DIR_NAME = os.path.basename(os.path.normpath(AGENT_DIR))
 
-# Prepare arguments for get_fast_api_app
 app_args = {"agents_dir": AGENT_DIR, "web": True}
 
 provider = TracerProvider()
@@ -36,7 +38,10 @@ trace.set_tracer_provider(provider)
 # Create FastAPI app with appropriate arguments
 app: FastAPI = get_fast_api_app(**app_args)
 
-# Initialize application state
+# Setup exception handlers
+setup_exception_handlers(app)
+
+# Initialize application state directly
 app.state.request_cache = {}
 app.state.rate_limiter = {}
 
@@ -44,14 +49,25 @@ app.state.rate_limiter = {}
 async def cache_middleware(request: Request, call_next):
     """
     Middleware to cache requests and prevent duplicate function calls.
+    Note: SSE endpoints are excluded from caching as they are streaming responses.
     """
+    # Skip caching for SSE endpoints and streaming responses
+    if request.url.path.endswith(
+        "/run_sse"
+    ) or "text/event-stream" in request.headers.get("accept", ""):
+        return await call_next(request)
+
     if "X-Request-ID" in request.headers:
         request_id = request.headers["X-Request-ID"]
         if request_id in request.app.state.request_cache:
             return request.app.state.request_cache[request_id]
+
     response = await call_next(request)
-    if "X-Request-ID" in request.headers:
+
+    # Only cache non-streaming responses
+    if "X-Request-ID" in request.headers and not hasattr(response, "body_iterator"):
         request.app.state.request_cache[request_id] = response
+
     return response
 
 @app.middleware("http")
@@ -79,21 +95,54 @@ async def rate_limit_middleware(request: Request, call_next):
 
 @app.middleware("http")
 async def db_session_middleware(request: Request, call_next):
-    response = JSONResponse({"error": "Database session not found"}, status_code=500)
     db = SessionLocal()
     try:
         request.state.db = db
         user_email = request.headers.get("X-User-Email")
         user_name = request.headers.get("X-User-Name")
-        if user_email:
-            logger.log_text(f"db_session_middleware: Received user_email: {user_email}", severity="INFO")
-            user = crud.get_or_create_user(db, user_email, user_name)
+
+        # The ADK by default forwards the user_id from the /run_sse payload to the /sessions endpoint.
+        # We need to extract it from the request path.
+        path_parts = request.url.path.split("/")
+        user_id_from_path = None
+        if "users" in path_parts and "sessions" in path_parts:
+            try:
+                user_id_index = path_parts.index("users") + 1
+                user_id_from_path = int(path_parts[user_id_index])
+            except (ValueError, IndexError):
+                pass
+
+        user = None
+        if user_id_from_path:
+            logger.log_text(
+                f"db_session_middleware: Found user_id in path: {user_id_from_path}",
+                severity="INFO",
+            )
+            user = crud.get_or_create_user(db, user_id=user_id_from_path)
+        elif user_email:
+            logger.log_text(
+                f"db_session_middleware: Received user_email from header: {user_email}",
+                severity="INFO",
+            )
+            user = crud.get_or_create_user(
+                db, user_email=user_email, user_name=user_name
+            )
+
+        if user:
             request.state.user = user
-            logger.log_text(f"db_session_middleware: User object set in request.state: {user.id}, {user.email}", severity="INFO")
+            logger.log_text(
+                f"db_session_middleware: User object set in request.state: {user.id}, {user.email}",
+                severity="INFO",
+            )
+        else:
+            logger.log_text(
+                "db_session_middleware: Could not identify user.", severity="WARNING"
+            )
+
         response = await call_next(request)
+        return response
     finally:
         db.close()
-    return response
 
 @app.on_event("startup")
 async def startup_event():
@@ -106,10 +155,13 @@ async def startup_event():
         init_db()
         logger.log_text("Database initialization successful.", severity="INFO")
     except Exception as e:
-        logger.log_text(f"Fatal error during database initialization: {e}", severity="ERROR")
+        logger.log_text(
+            f"Fatal error during database initialization: {e}", severity="ERROR"
+        )
         # Depending on the desired behavior, you might want to exit or handle this differently.
         # For now, we log it and let the app continue, though it will likely fail on DB operations.
         pass
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -118,18 +170,18 @@ async def shutdown_event():
     if engine:
         engine.dispose()
 
-app.title = "gemini-adk-demo"
-app.description = "API for interacting with the Agent gemini-adk-demo"
+app.title = AGENT_DIR_NAME
+app.description = f"API for interacting with the Agent {AGENT_DIR_NAME}"
 
 
 class Feedback(BaseModel):
     """Represents feedback for a conversation."""
 
-    score: int | float
-    text: str | None = ""
+    score: Union[int, float]
+    text: Union[str, None] = ""
     invocation_id: str
     log_type: Literal["feedback"] = "feedback"
-    service_name: Literal["gemini-adk-demo"] = "gemini-adk-demo"
+    service_name: Literal[AGENT_DIR_NAME] = AGENT_DIR_NAME
     user_id: str = ""
 
 
@@ -146,24 +198,9 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     logger.log_struct(feedback.model_dump(), severity="INFO")
     return {"status": "success"}
 
-
-@app.delete("/users/{user_id}/purge")
-def purge_user(user_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes all data associated with a user.
-    """
-    result = crud.purge_user_data(db, user_id)
-    return result
-
-@app.get("/users/by_email/{user_email}", response_model=schemas.User)
-def get_user_by_email(user_email: str, request: Request, db: Session = Depends(get_db)):
-    """
-    Retrieves a user by their email address.
-    """
-    user_name = request.headers.get("X-User-Name", "default_user")
-    user = crud.get_or_create_user(db, user_email, user_name)
-    return user
-
+app.include_router(newsletter.router)
+app.include_router(metrics.router)
+app.include_router(users.router)
 
 # Main execution
 if __name__ == "__main__":

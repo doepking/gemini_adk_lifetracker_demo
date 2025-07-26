@@ -1,16 +1,26 @@
 from google.adk.tools import FunctionTool, ToolContext
-from ..shared_libraries.crud import update_background_info_and_persist_impl, get_or_create_user
-from ..shared_libraries.database import get_db
+from ..crud import (
+    update_background_info_tool as update_background_info_crud_tool,
+    get_or_create_user,
+)
+from ..database import get_db
 
-def update_background_info_impl(background_update_json: str, tool_context: ToolContext) -> str:
+
+def update_user_background_information(
+    background_update_json: str, tool_context: ToolContext
+) -> dict:
     """Updates the user's background information in the database.
+
+    This tool should be used when the user provides personal information like name, age, goals, values, or challenges.
 
     Args:
         background_update_json: A JSON string with the background information to update.
-        tool_context: The context of the tool.
+        tool_context: The context of the tool, containing user information.
 
     Returns:
-        A string with the result of the operation.
+        A dictionary containing the updated background information or an error message.
+        Example (success): {"status": "success", "content": {"location": "San Francisco"}, ...}
+        Example (error): {"status": "error", "message": "Invalid JSON format."}
     """
     db = next(get_db())
     try:
@@ -18,20 +28,16 @@ def update_background_info_impl(background_update_json: str, tool_context: ToolC
         user_email = tool_context.state.get("user_email")
         user_name = tool_context.state.get("user_name")
         user = get_or_create_user(db, user_email, user_name, user_id)
-        
-        result = update_background_info_and_persist_impl(
-            db=db,
-            background_update_json=background_update_json,
-            user=user
+
+        return update_background_info_crud_tool(
+            db=db, background_update_json=background_update_json, user=user
         )
-        if not result:
-            return "Error: Could not update background information."
-        return f"Success: Background information updated for user {result.user_id}."
     except Exception as e:
-        return f"Error updating background info: {e}"
+        return {"status": "error", "message": f"An unexpected error occurred: {e}"}
     finally:
         db.close()
 
+
 update_background_info_tool = FunctionTool(
-    func=update_background_info_impl,
+    func=update_user_background_information,
 )

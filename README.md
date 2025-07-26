@@ -193,15 +193,23 @@ graph TD
 -   **`gemini_adk_demo/agent.py`:** Defines the multi-agent architecture, including the `Router Agent` and the `Insight Team`.
 -   **`gemini_adk_demo/prompt.py`:** Contains the prompts used by the agents.
 -   **`gemini_adk_demo/tools/`:** Contains the tools used by the agents.
--   **`gemini_adk_demo/shared_libraries/`:** Contains shared utilities, including database interaction logic.
+-   **`gemini_adk_demo/`:** Contains the core application logic.
     -   **`crud.py`:** Contains the database CRUD operations.
     -   **`database.py`:** Configures the database connection.
     -   **`models.py`:** Defines the database schema using SQLAlchemy ORM.
     -   **`schemas.py`:** Defines the Pydantic schemas for data validation.
-    -   **`constants.py`:** Contains constants used throughout the application.
-    -   **`tracing.py`:** Contains the OpenTelemetry trace exporter.
+-   **`api/`:** Contains the FastAPI routers and dependencies.
+-   **`tracing.py`:** Contains the OpenTelemetry trace exporter.
 -   **`eval/`:** Contains scripts for evaluating the agent.
     -   **`conversation.py`:** A script to interact with the agent through the command line.
+
+### API CRUD Endpoints
+
+The application exposes a set of RESTful API endpoints for interacting with the system from the Streamlit frontend.
+
+-   **`/users`**: Endpoints for user management, including tasks, text inputs, and background information.
+-   **`/newsletter`**: Endpoints for managing newsletter subscriptions and tracking opens.
+-   **`/metrics`**: Endpoints for logging and retrieving daily metrics.
 
 ## LLM Interaction and Tool Use
 
