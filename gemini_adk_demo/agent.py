@@ -1,8 +1,9 @@
 from . import core  # Initialize Vertex AI
-from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
+from google.adk.agents import SequentialAgent, ParallelAgent
 from google.adk.tools.agent_tool import AgentTool
 
 from . import prompt
+from .custom_agent import CustomAgent
 from .shared_libraries import constants
 from .sub_agents.visionary.agent import visionary_agent
 from .sub_agents.architect.agent import architect_agent
@@ -38,7 +39,7 @@ insights_engine_workflow = SequentialAgent(
     after_agent_callback=send_newsletter_callback,
 )
 
-router_agent = LlmAgent(
+router_agent = CustomAgent(
     name=constants.AGENT_NAME,
     model="gemini-2.5-flash", # or "gemini-2.5-flash-lite-preview-06-17"
     description=constants.DESCRIPTION,
