@@ -1,6 +1,8 @@
 from . import core  # Initialize Vertex AI
 from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
 from google.adk.tools.agent_tool import AgentTool
+from google.adk.models.lite_llm import LiteLlm
+import os
 
 from . import prompt
 from .shared_libraries import constants
@@ -40,7 +42,11 @@ insights_engine_workflow = SequentialAgent(
 
 router_agent = LlmAgent(
     name=constants.AGENT_NAME,
-    model="gemini-2.5-flash", # or "gemini-2.5-flash-lite-preview-06-17"
+    model=LiteLlm(
+        model="openai/GLM-4.6",
+        api_base=os.environ.get("ZAI_BASE_URL"),
+        api_key=os.environ.get("ZAI_API_KEY")
+    ),
     description=constants.DESCRIPTION,
     instruction=prompt.ROUTER_PROMPT,
     output_key="router_output",
