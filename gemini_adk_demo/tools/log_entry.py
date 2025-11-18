@@ -33,7 +33,6 @@ def add_new_log_entry_for_user(
             user=user,
             category_suggestion=category_suggestion,
         )
-        tool_context.actions.skip_summarization = True
         return result
     except Exception as e:
         return {"status": "error", "message": f"An unexpected error occurred: {e}"}

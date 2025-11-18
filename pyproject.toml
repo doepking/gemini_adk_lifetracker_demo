@@ -24,6 +24,7 @@ sqlalchemy = "^2.0.23"
 psycopg2-binary = "^2.9.9"
 cloud-sql-python-connector = "^1.5.0"
 gunicorn = "^22.0.0"
+litellm = "^1.0.0"
 
 [tool.poetry.group.dev]
 optional = true
